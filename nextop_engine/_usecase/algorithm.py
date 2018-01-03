@@ -168,6 +168,7 @@ def Bayseian(txs, forecastDay, unit):
     # date = [d.strftime('%Y-%m-%d') for d in forecastProphetTable['ds']]
     return [np.exp(y) for y in forecastProphetTable['yhat'][-forecastDay:]]
 
+
 def Bayseian2(txs, forecastDay, unit, weather=None):
     global mockForecastDictionary
     global realForecastDictionary
