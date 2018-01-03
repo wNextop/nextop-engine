@@ -1,6 +1,6 @@
-from .._element.calculations import minMaxNormalizer, minMaxDeNormalizer
+# from .._element.calculations import minMaxNormalizer, minMaxDeNormalizer
 
-import tensorflow as tf
+# import tensorflow as tf
 import numpy as np
 from datetime import datetime
 import pandas as pd
@@ -240,13 +240,173 @@ def Bayseian2(txs, forecastDay, weather, unit):
             weatherL = weather[:-forecastDay]
             txs['weather'] = weatherL
             model.add_regressor('weather')
+
             model.fit(txs)
             future = model.make_future_dataframe(periods=forecastDay, freq='m')
             future['weather'] = weather
+
             forecastProphetTable = model.predict(future)
 
             usecaseofholiday = forecastProphetTable[10:70][
             ['ds', 'newyear', 'thanksgiving', 'chocostick']][:]
+            print(usecaseofholiday)
+
+    # date = [d.strftime('%Y-%m-%d') for d in forecastProphetTable['ds']]
+    return [np.exp(y) for y in forecastProphetTable['yhat'][-forecastDay:]]
+
+
+def BayseianNoCompareTemp(txs, forecastDay, weather, unit):
+    # global mockForecastDictionary
+    global realForecastDictionary
+
+    newyear = pd.DataFrame({
+        'holiday': 'newyear',
+        'ds': pd.to_datetime(['2010-02-14', '2011-02-03', '2012-01-23',
+                              '2013-02-10', '2014-01-31', '2015-02-19',
+                              '2016-02-09', '2017-02-28']),
+        'lower_window': -1,
+        'upper_window': 1,
+    })
+    thanksgiving = pd.DataFrame({
+        'holiday': 'thanksgiving',
+        'ds': pd.to_datetime(['2010-09-22', '2011-09-12', '2012-09-30',
+                              '2013-09-19', '2014-09-09', '2015-09-27',
+                              '2016-09-15', '2017-10-04']),
+        'lower_window': -1,
+        'upper_window': 1,
+    })
+    chocostick = pd.DataFrame({
+        'holiday': 'chocostick',
+        'ds': pd.to_datetime(['2010-11-11', '2011-11-11', '2012-11-11',
+                              '2013-11-11', '2014-11-11', '2015-11-11',
+                              '2016-11-11', '2017-11-11']),
+        'lower_window': 0,
+        'upper_window': 0,
+    })
+
+    if unit is 'day':
+        # print("here2")
+        if (len(txs) < 366):
+            model = Prophet()
+            model.fit(txs)
+            future = model.make_future_dataframe(periods=forecastDay)
+            forecastProphetTable = model.predict(future)
+
+        else:
+
+            holidaybeta = pd.concat((newyear, thanksgiving))
+
+            model = Prophet(weekly_seasonality=False, yearly_seasonality=True, holidays=holidaybeta)
+            model.add_seasonality(model, name='monthly', period=30.5, fourier_order=5)
+
+            model.fit(txs)
+            future = model.make_future_dataframe(periods=forecastDay)
+            forecastProphetTable = model.predict(future)
+
+
+    elif unit is 'month':
+        # print("here2")
+        if (len(txs) < 12):
+            model = Prophet()
+            model.fit(txs)
+            future = model.make_future_dataframe(periods=forecastDay, freq='m')
+            forecastProphetTable = model.predict(future)
+
+        else:
+            # print("here")
+            holidaybeta = pd.concat((newyear, thanksgiving, chocostick))
+            model = Prophet(daily_seasonality=False, weekly_seasonality=False, yearly_seasonality=True,
+                            holidays=holidaybeta)
+            weatherL = weather[:-forecastDay]
+            txs['weather'] = weatherL
+            model.add_regressor('weather')
+
+            model.fit(txs)
+            future = model.make_future_dataframe(periods=forecastDay, freq='m')
+            future['weather'] = weather
+
+            forecastProphetTable = model.predict(future)
+
+            usecaseofholiday = forecastProphetTable[10:70][
+                                   ['ds', 'newyear', 'thanksgiving', 'chocostick']][:]
+            print(usecaseofholiday)
+
+    # date = [d.strftime('%Y-%m-%d') for d in forecastProphetTable['ds']]
+    return [np.exp(y) for y in forecastProphetTable['yhat'][-forecastDay:]]
+
+def BayseianNoCompareTempRain(txs, forecastDay, weather, rain, unit):
+    global mockForecastDictionary
+    global realForecastDictionary
+
+    newyear = pd.DataFrame({
+        'holiday': 'newyear',
+        'ds': pd.to_datetime(['2010-02-14', '2011-02-03', '2012-01-23',
+                              '2013-02-10', '2014-01-31', '2015-02-19',
+                              '2016-02-09', '2017-02-28']),
+        'lower_window': -1,
+        'upper_window': 1,
+    })
+    thanksgiving = pd.DataFrame({
+        'holiday': 'thanksgiving',
+        'ds': pd.to_datetime(['2010-09-22', '2011-09-12', '2012-09-30',
+                              '2013-09-19', '2014-09-09', '2015-09-27',
+                              '2016-09-15', '2017-10-04']),
+        'lower_window': -1,
+        'upper_window': 1,
+    })
+    chocostick = pd.DataFrame({
+        'holiday': 'chocostick',
+        'ds': pd.to_datetime(['2010-11-11', '2011-11-11', '2012-11-11',
+                              '2013-11-11', '2014-11-11', '2015-11-11',
+                              '2016-11-11', '2017-11-11']),
+        'lower_window': 0,
+        'upper_window': 0,
+    })
+
+    if unit is 'day':
+        # print("here2")
+        if (len(txs) < 366):
+            model = Prophet()
+            model.fit(txs)
+            future = model.make_future_dataframe(periods=forecastDay)
+            forecastProphetTable = model.predict(future)
+
+        else:
+
+            holidaybeta = pd.concat((newyear, thanksgiving))
+
+            model = Prophet(weekly_seasonality=False, yearly_seasonality=True, holidays=holidaybeta)
+            model.add_seasonality(model, name='monthly', period=30.5, fourier_order=5)
+
+            model.fit(txs)
+            future = model.make_future_dataframe(periods=forecastDay)
+            forecastProphetTable = model.predict(future)
+
+    elif unit is 'month':
+        # print("here2")
+        if (len(txs) < 12):
+            model = Prophet()
+            model.fit(txs)
+            future = model.make_future_dataframe(periods=forecastDay, freq='m')
+            forecastProphetTable = model.predict(future)
+
+        else:
+            # print("here")
+            holidaybeta = pd.concat((newyear, thanksgiving, chocostick))
+            model = Prophet(daily_seasonality=False, weekly_seasonality=False, yearly_seasonality=True,
+                            holidays=holidaybeta)
+            weatherL = weather[:-forecastDay]
+            txs['weather'] = weatherL
+            model.add_regressor('weather')
+            model.add_regressor('rain')
+            model.fit(txs)
+            future = model.make_future_dataframe(periods=forecastDay, freq='m')
+            future['weather'] = weather
+            future['rain'] = rain
+            forecastProphetTable = model.predict(future)
+
+            usecaseofholiday = forecastProphetTable[10:70][
+                                   ['ds', 'newyear', 'thanksgiving', 'chocostick']][:]
             print(usecaseofholiday)
 
     # date = [d.strftime('%Y-%m-%d') for d in forecastProphetTable['ds']]
