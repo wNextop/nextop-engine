@@ -7,7 +7,6 @@ import pandas as pd
 from fbprophet import Prophet
 
 
-
 def LSTM(txs, forecastDay, features):
     tf.reset_default_graph()
     tf.set_random_seed(77)
@@ -163,7 +162,7 @@ def Bayseian(txs, forecastDay, unit):
     # date = [d.strftime('%Y-%m-%d') for d in forecastProphetTable['ds']]
     return [np.exp(y) for y in forecastProphetTable['yhat'][-forecastDay:]]
 
-
+  
 def Bayseian2(txs, forecastDay, weather, unit):
     global mockForecastDictionary
     global realForecastDictionary
