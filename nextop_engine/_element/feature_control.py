@@ -2,8 +2,9 @@ import pandas as pd
 import numpy as np
 import copy
 from datetime import datetime
+from collections import OrderedDict
 import os
-df_dir='C:\\Studying\\myvenv\\Project_Nextop\\nextop-engine\\nextop_engine\\_element\\data\\df_kpp\\'
+df_dir='C:\\Studying\\myvenv\\Project_Nextop\\nextop-engine\\nextop_engine\\_element\\data\\private\\'
 temp_data_dir='C:\\Studying\\myvenv\\Project_Nextop\\nextop-engine\\nextop_engine\\_element\\data\\temp_data'
 
 def struct(inputfilename):
@@ -27,8 +28,10 @@ def struct(inputfilename):
 def save_as_xlsx(dict_of_dfs, inputfilename, outputfilename=None):
     if outputfilename==None: outputfilename= df_dir + inputfilename[:-5] + '_restructured' + inputfilename[-5:]
     writer= pd.ExcelWriter(outputfilename, engine= 'xlsxwriter')
-    for (dfsheetname, df) in zip(dict_of_dfs.keys(), dict_of_dfs.values()):
-        df.to_excel(writer, sheet_name= dfsheetname)
+    if isinstance(dict_of_dfs, type(OrderedDict())):
+        for (dfsheetname, df) in dict_of_dfs.items():
+            df.to_excel(writer, sheet_name= dfsheetname)
+    else: dict_of_dfs.to_excel(writer, sheet_name= 'data_merged')
     writer.save()
     return None
 
@@ -82,12 +85,33 @@ def dir_walk(data_path, df_inputfilename):
         print(df)
     return dict_of_dfs
 
+def dict_to_df(dict_of_dfs):
+    column_list= ['ds', 'rain_amount', 'temp_max', 'temp_min', 'y']
+    df_txs= pd.DataFrame(columns= column_list)
+    # try:
+    for sheetname, df in dict_of_dfs.items():
+        df.rename(columns= {'발송일': 'ds',\
+                            'y_sum': 'y'}, inplace=True)
+        df= df[column_list]
+        df_txs= pd.concat([df_txs, df])
+    df_txs.sort_values(by='ds')
+    print(df_txs.head(10))
+    print(df_txs.tail(10))
+    return df_txs
+    # except: print(type(txs['2017sample']))
+
+
 # Main
 
 if __name__== '__main__':
-    inputfilename= 'KPP일별투입(10_17).xlsx'
-    dict_of_dfs=dir_walk(temp_data_dir, df_dir+inputfilename)
-    save_as_xlsx(dict_of_dfs, inputfilename)
+    inputfilename= 'KPP일별투입(10_17)_restructured.xlsx'
+    # dict_of_dfs=dir_walk(temp_data_dir, df_dir+inputfilename)
+    dict_of_dfs= pd.read_excel(df_dir+inputfilename, sheet_name=None)
+    print(type(dict_of_dfs))
+    if isinstance(dict_of_dfs, type(OrderedDict())):
+        df_txs= dict_to_df(dict_of_dfs)
+    save_as_xlsx(df_txs, inputfilename)
+    # save_as_xlsx(dict_of_dfs, inputfilename)
     # struct(df_dir+'\\kpp_sampledata.xlsx')
     # add_temp_data('2017_rain.csv', 'rain')
     # add_temp_data('2017_temp.csv', 'temp')
