@@ -1,11 +1,17 @@
-from .._element.calculations import minMaxNormalizer, minMaxDeNormalizer
+import os
+import sys
+path_name= os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(path_name)
+
+from _element.feature_control import *
+from _element.calculations import minMaxNormalizer, minMaxDeNormalizer
 
 import tensorflow as tf
 import numpy as np
 from datetime import datetime
 import pandas as pd
 from fbprophet import Prophet
-
+from collections import OrderedDict
 
 def LSTM(txs, forecastDay, features):
     tf.reset_default_graph()
@@ -162,9 +168,12 @@ def Bayseian(txs, forecastDay, unit):
     # date = [d.strftime('%Y-%m-%d') for d in forecastProphetTable['ds']]
     return [np.exp(y) for y in forecastProphetTable['yhat'][-forecastDay:]]
 
-def Bayseian2(txs, forecastDay, weather, unit):
+def Bayseian2(txs, forecastDay, unit, weather=None):
     global mockForecastDictionary
     global realForecastDictionary
+
+    if isinstance(txs, type(OrderedDict())):
+        txs= feature_control.dict_to_df(txs)
 
     newyear = pd.DataFrame({
         'holiday': 'newyear',
@@ -236,12 +245,50 @@ def Bayseian2(txs, forecastDay, weather, unit):
             # print("here")
             holidaybeta = pd.concat((newyear, thanksgiving, chocostick))
             model = Prophet(daily_seasonality=False, weekly_seasonality=False, yearly_seasonality=True, holidays=holidaybeta)
-            weatherL = weather[:-forecastDay]
-            txs['weather'] = weatherL
-            model.add_regressor('weather')
+
+            # weatherL = weather[:-forecastDay]
+            # txs['weather'] = weatherL
+            # model.add_regressor('weather')
+            for feature in txs.columns.values.tolist():
+                if not (feature == 'ds' or feature == 'y'):
+                    model.add_regressor(feature)
             model.fit(txs)
-            future = model.make_future_dataframe(periods=forecastDay, freq='m')
-            future['weather'] = weather
+            future = model.make_future_dataframe(periods=forecastDay)   # 일 별로 수정...!
+            # future = model.make_future_dataframe(periods=forecastDay, freq='m')
+            # future['weather'] = weather
+
+            #TODO: 강수량, 날씨 데이터를 예측할 날짜에 넣어 줘야 predict 함수가 돌아갑니다.
+            # 현재 future dataframe은 이렇게 생겼어요.
+            #              ds
+            # 0    2010-07-01
+            # 1    2010-07-02
+            # 2    2010-07-03
+            # 3    2010-07-04
+            # 4    2010-07-05
+            # 5    2010-07-06
+            # 6    2010-07-07
+            # 7    2010-07-08
+            # 8    2010-07-09
+            # 9    2010-07-10
+            # ...         ...
+            # 2692 2017-11-21
+            # 2693 2017-11-22
+            # 2694 2017-11-23
+            # 2695 2017-11-24
+            # 2696 2017-11-25
+            # 2697 2017-11-26
+            # 2698 2017-11-27
+            # 2699 2017-11-28
+            # 2700 2017-11-29
+            # 2701 2017-11-30
+            # 2702 2017-12-01       << 여기서부터 예측할 날짜>>
+            # 2703 2017-12-02
+            # 2704 2017-12-03
+            # 2705 2017-12-04
+            # 2706 2017-12-05
+            # 2707 2017-12-06
+            # 2708 2017-12-07
+            # print(future)
             forecastProphetTable = model.predict(future)
 
             usecaseofholiday = forecastProphetTable[10:70][
@@ -252,3 +299,15 @@ def Bayseian2(txs, forecastDay, weather, unit):
     return [np.exp(y) for y in forecastProphetTable['yhat'][-forecastDay:]]
 
 # TODO : 페이스북 라이브러리 조절 파라메터 도큐멘 공부해서 성능 높이기
+
+# Main ########################################################################
+if __name__ == '__main__':
+    inputfilename= 'KPP일별투입(10_17)_restructured_restructured.xlsx'
+    #이미 수정한 데이터로 진행
+    df_dir= '\\_element\\data\\private\\'
+    #해당 주소에 데이터를 넣어 주어야!
+    temp_data_dir= '\\_element\\data\\temp_data'
+    txs= pd.read_excel(path_name+df_dir+inputfilename, sheet_name=None)
+    if isinstance(txs, type(OrderedDict())):
+        txs= dict_to_df(txs)
+    Bayseian2(txs, 7, 'month')
