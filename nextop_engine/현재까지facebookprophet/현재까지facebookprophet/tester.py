@@ -13,26 +13,37 @@ def rmse(a, b):
     return np.sqrt(sum / len(a))
 
 
-def Bayseian(txs, forecastDay, weather, unit):
+def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain, forcastedMax, forcastedMin, unit):
     global mockForecastDictionary
     global realForecastDictionary
 
     newyear = pd.DataFrame({
         'holiday': 'newyear',
-        'ds': pd.to_datetime(['2010-02-14', '2011-02-03', '2012-01-23',
+        'ds': pd.to_datetime(['2011-02-03', '2012-01-23',
                               '2013-02-10', '2014-01-31', '2015-02-19',
-                              '2016-02-09', '2017-02-28']),
+                              '2016-02-09', '2017-02-28', '2018-02-16']),
         'lower_window': -1,
         'upper_window': 1,
     })
+
     thanksgiving = pd.DataFrame({
         'holiday': 'thanksgiving',
         'ds': pd.to_datetime(['2010-09-22', '2011-09-12', '2012-09-30',
                               '2013-09-19', '2014-09-09', '2015-09-27',
-                              '2016-09-15', '2017-10-04']),
+                              '2016-09-15', '2017-10-04', '2018-09-24']),
         'lower_window': -1,
         'upper_window': 1,
     })
+
+    chocostick = pd.DataFrame({
+        'holiday': 'chocostick',
+        'ds': pd.to_datetime(['2010-11-11', '2011-11-11', '2012-11-11',
+                              '2013-11-11', '2014-11-11', '2015-11-11',
+                              '2016-11-11', '2017-11-11', '2018-11-11']),
+        'lower_window': 0,
+        'upper_window': 0,
+    })
+
 
     if unit is 'day':
         # print("here2")
@@ -43,23 +54,41 @@ def Bayseian(txs, forecastDay, weather, unit):
             forecastProphetTable = model.predict(future)
 
         else:
-            # 여기만 시범삼아 고치는
-            holidaybeta = pd.concat((newyear, thanksgiving))
+            holidaybeta = pd.concat((newyear, thanksgiving, chocostick))
+            # print(holidaybeta)
 
-            model = Prophet(weekly_seasonality=False, yearly_seasonality=True, holidays= holidaybeta)
-            model.add_seasonality(model, name='monthly', period=30.5, fourier_order=5)
-            # 날씨는 어떻게 추가할수 있을까? API에는 존재하지 않는다.
-            # 주간 시즌을 없애고 월별 주기 생성
+            model = Prophet(weekly_seasonality=True, yearly_seasonality=True, holidays= holidaybeta)
+            # model.add_seasonality(model, name='monthly', period=30.5, fourier_order=5)
 
-            # 양대 명절만을 고려해놨다. 추가요구사항은 좀 더 알려줬으면 싶은데
-            # 연휴와 휴가철 역시 마찬가지. 이것에 대한 데이터가 필요하다.
-            # 여기까지는 seasonality and holiday로 처리가능
-            # 계약종료, 신규업체는 우리가 무슨수로 알 수 있지? 뼈대는 무엇? -> changepoint강제처리가 1
-            # 화물연대 파업은 무슨수로 알 수 있지? 뼈대는 무엇? ->이미 발생한 파업은 outlier처리를 해야하고
-            # 앞으로 예고된 파업에 대해서는 파업요소를 홀리데이에 강제로 추가해줘야 할거같다.
+
+            if(amountOfRain.any()) :
+                print('here')
+                txs['rain_amount'] = amountOfRain
+                model.add_regressor('rain_amount')
+                txs['max_temp'] = maxOfTemp
+                model.add_regressor('max_temp')
+                txs['min_temp'] = minOfTemp
+                model.add_regressor('min_temp')
+            else :
+                print('none')
+
             model.fit(txs)
-            future = model.make_future_dataframe(periods=forecastDay)
+            future = model.make_future_dataframe(periods=forecastDay, freq= 'd')
+
+            # print(future)
+            # future['weather'] = weather
+            if(forcastedRain.any()) :
+                future['rain_amount'] = forcastedRain
+                future['max_temp'] = forcastedMax
+                future['min_temp'] = forcastedMin
+            else :
+                print('none')
+
             forecastProphetTable = model.predict(future)
+            # print(forecastProphetTable)
+
+            # usecaseofholiday = forecastProphetTable[(forecastProphetTable['newyear'] + forecastProphetTable['thanksgiving'] + forecastProphetTable['chocostick']).abs() > 0][['ds', 'newyear', 'thanksgiving', 'chocostick']][:]
+            # print(usecaseofholiday)
 
     elif unit is 'week':
         # print("here2")
@@ -85,42 +114,59 @@ def Bayseian(txs, forecastDay, weather, unit):
 
         else:
             # print("here")
-            holidaybeta = pd.concat((newyear, thanksgiving))
+            holidaybeta = pd.concat((newyear, thanksgiving, chocostick))
             model = Prophet(daily_seasonality=False, weekly_seasonality=False, yearly_seasonality=True, holidays=holidaybeta)
-            weatherL = weather[:-forecastDay]
-            txs['weather'] = weatherL
-            model.add_regressor('weather')
+            # weatherL = weather[:-forecastDay]
+            # txs['weather'] = weatherL
+            # model.add_regressor('weather')
             model.fit(txs)
             future = model.make_future_dataframe(periods=forecastDay, freq='m')
-            future['weather'] = weather
+            # future['weather'] = weather
             forecastProphetTable = model.predict(future)
+            # usecaseofholiday = forecastProphetTable[(forecastProphetTable['newyear'] + forecastProphetTable['thanksgiving'] + forecastProphetTable['chocostick']).abs() > 0][
+            # ['ds', 'newyear', 'thanksgiving', 'chocostick']][:]
+            # print(usecaseofholiday)
 
     # date = [d.strftime('%Y-%m-%d') for d in forecastProphetTable['ds']]
     return [np.exp(y) for y in forecastProphetTable['yhat'][-forecastDay:]]
 
-datadates = pd.read_csv('fordates.csv', header=0)
-datavalues = pd.read_csv('forvalue.csv', header = 0)
-dataweathers = pd.read_csv('weather2.csv', header = 0)
-rawArrayDatas = pd.concat((datadates, datavalues), axis=1)
 
-forecastDay = 8
+# ------------------------------------------------------------원본 데이터들
+dataByDates = pd.read_csv('KPPuc77cubcc4ud22cuc785(10_17)_restructured_restructured.csv', header = 0)
+dataDates = pd.to_datetime(dataByDates['ds'])
+dataValues = dataByDates['y']
+dataRainAmount = dataByDates['rain_amount']
+dataTempMax = dataByDates['temp_max']
+dataTempMin = dataByDates['temp_min']
+# print(dataDates)
+# print(dataDates)
 
-# ds = rawArrayDatas[0][:-forecastDay]
-ds = rawArrayDatas['date'][:-forecastDay]
-# print(ds)
+rawArrayDatas = pd.concat((dataDates, dataValues), axis=1)
+# print(rawArrayDatas)
+# ------------------------------------------------------------2016년까지의 데이터들. 2017예측을 위해서 사용한다.
+
+numberOf2017 = 333
+forecastDay = 365
+
 # # TODO bayseian에 대해서는 input값이 0인 상황처리 필요
-y = list(np.log(rawArrayDatas['values'][:-forecastDay]))
-# print(y)
-sales = list(zip(ds, y))
-# print(sales)
-txsForRealForecastBayesian = pd.DataFrame(data=sales, columns=['ds', 'y'])
-# print(txsForRealForecastBayesian)
-realForecastDictionary = {}
-realForecastDictionary['Bayseian'] = Bayseian(txsForRealForecastBayesian, forecastDay, dataweathers, 'month')
+ds = rawArrayDatas['ds'][:-numberOf2017]
+y = list(np.log(rawArrayDatas['y'][:-numberOf2017]))# 왜 로그를 씌워야하는지는 아직도 의문이다. 필요성이 있는가?
+rainAmount = dataRainAmount[:-numberOf2017]
+tempMax = dataTempMax[:-numberOf2017]
+tempMin = dataTempMin[:-numberOf2017]
+#-------------------------------------------------------------2017예측하고 rmse 구하기
 
-testY = {}
-testY['Bayseian'] = list(rawArrayDatas['values'][-forecastDay:])
-print(realForecastDictionary['Bayseian'])
-print(testY['Bayseian'])
-resultofrmse = rmse(testY['Bayseian'], realForecastDictionary['Bayseian'])
+salesFor2017 = list(zip(ds, y))
+# print(sales)
+txsFor2017 = pd.DataFrame(data=salesFor2017, columns=['ds', 'y'])
+# print(txsFor2017)
+testFor2017 = {}
+testFor2017['Bayseian'] = Bayseian(txsFor2017, numberOf2017, rainAmount, tempMax, tempMin, dataRainAmount, dataTempMax, dataTempMin, 'day')
+YFor2017 = {}
+YFor2017['Bayseian'] = list(rawArrayDatas['y'][-numberOf2017:])
+print(testFor2017['Bayseian'])
+print(YFor2017['Bayseian'])
+resultofrmse = rmse(YFor2017['Bayseian'], testFor2017['Bayseian'])
 print(resultofrmse)
+# ------------------------------------------------------------2018 예측하기
+#TODO : 날씨와 같은것을 이벤트로 처리하기. 일단은 테스터로 올렸습니다. 알고리즘에 바로 올리면 문제가 생겨서요 ㅜㅜ
