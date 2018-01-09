@@ -17,32 +17,7 @@ def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain
     global mockForecastDictionary
     global realForecastDictionary
 
-    newyear = pd.DataFrame({
-        'holiday': 'newyear',
-        'ds': pd.to_datetime(['2011-02-03', '2012-01-23',
-                              '2013-02-10', '2014-01-31', '2015-02-19',
-                              '2016-02-09', '2017-02-28', '2018-02-16']),
-        'lower_window': -1,
-        'upper_window': 1,
-    })
 
-    thanksgiving = pd.DataFrame({
-        'holiday': 'thanksgiving',
-        'ds': pd.to_datetime(['2010-09-22', '2011-09-12', '2012-09-30',
-                              '2013-09-19', '2014-09-09', '2015-09-27',
-                              '2016-09-15', '2017-10-04', '2018-09-24']),
-        'lower_window': -1,
-        'upper_window': 1,
-    })
-
-    chocostick = pd.DataFrame({
-        'holiday': 'chocostick',
-        'ds': pd.to_datetime(['2010-11-11', '2011-11-11', '2012-11-11',
-                              '2013-11-11', '2014-11-11', '2015-11-11',
-                              '2016-11-11', '2017-11-11', '2018-11-11']),
-        'lower_window': 0,
-        'upper_window': 0,
-    })
 
 
     if unit is 'day':
@@ -54,10 +29,10 @@ def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain
             forecastProphetTable = model.predict(future)
 
         else:
-            holidaybeta = pd.concat((newyear, thanksgiving, chocostick))
+
             # print(holidaybeta)
 
-            model = Prophet(weekly_seasonality=True, yearly_seasonality=True, holidays= holidaybeta)
+
             # model.add_seasonality(model, name='monthly', period=30.5, fourier_order=5)
 
 
