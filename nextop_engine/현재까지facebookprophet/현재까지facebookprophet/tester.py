@@ -132,7 +132,7 @@ def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain
 
 
 # ------------------------------------------------------------원본 데이터들
-dataByDates = pd.read_csv('KPPuc77cubcc4ud22cuc785(10_17)_restructured_restructured.csv', header = 0)
+dataByDates = pd.read_csv('KPPinput10_17.csv', header = 0)
 dataDates = pd.to_datetime(dataByDates['ds'])
 dataValues = dataByDates['y']
 dataRainAmount = dataByDates['rain_amount']
@@ -150,7 +150,7 @@ forecastDay = 365
 
 # # TODO bayseian에 대해서는 input값이 0인 상황처리 필요
 ds = rawArrayDatas['ds'][:-numberOf2017]
-y = list(np.log(rawArrayDatas['y'][:-numberOf2017]))          # 왜 로그를 씌워야하는지는 아직도 의문이다. 필요성이 있는가?
+y = list(np.log(rawArrayDatas['y'][:-numberOf2017]))# 왜 로그를 씌워야하는지는 아직도 의문이다. 필요성이 있는가?
 rainAmount = dataRainAmount[:-numberOf2017]
 tempMax = dataTempMax[:-numberOf2017]
 tempMin = dataTempMin[:-numberOf2017]
@@ -169,4 +169,3 @@ print(YFor2017['Bayseian'])
 resultofrmse = rmse(YFor2017['Bayseian'], testFor2017['Bayseian'])
 print(resultofrmse)
 # ------------------------------------------------------------2018 예측하기
-#TODO : 날씨와 같은것을 이벤트로 처리하기. 일단은 테스터로 올렸습니다. 알고리즘에 바로 올리면 문제가 생겨서요 ㅜㅜ

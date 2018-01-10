@@ -1,11 +1,12 @@
 import os
 import sys
 
+from nextop_engine._element import feature_control
 from nextop_engine._element.feature_control import dict_to_df
 
 path_name= os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(path_name)
-
+print(os.path.dirname(__file__))
 from _element.feature_control import *
 # from _element.calculations import minMaxNormalizer, minMaxDeNormalizer
 
