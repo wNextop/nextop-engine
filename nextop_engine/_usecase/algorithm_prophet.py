@@ -1,8 +1,7 @@
 import os
 import sys
-if __name__=="__main__":
-    path_name= os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-    sys.path.append(path_name)
+path_name= os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(path_name)
 
 import _element.feature_control as ftc
 import _element.calculations as calc
@@ -20,7 +19,7 @@ from collections import OrderedDict
 from scipy.special import expit
 import copy
 
-def Bayseian2(txs, forecastDay, unit, temp_data_dir):
+def Bayseian2(txs, forecastDay, unit):
     global mockForecastDictionary
     global realForecastDictionary
 
@@ -30,8 +29,8 @@ def Bayseian2(txs, forecastDay, unit, temp_data_dir):
     else: txs_raw= copy.deepcopy(txs)
 
     txs= ftc.cut_df(txs_raw, varr.START_DATE, (varr.LAST_DATE- timedelta(days= forecastDay-1)))
-    print(txs.head())
-    print(txs.tail())
+    # print(txs.head())
+    # print(txs.tail())
 
     if unit is 'day':
         # print("here2")
@@ -48,12 +47,13 @@ def Bayseian2(txs, forecastDay, unit, temp_data_dir):
         if (len(txs) < 12):     seasonality_option= (False, False, False, True, 'm')
         else:                   seasonality_option= (False, False, False, True, 'm')
 
-    model = Prophet(daily_seasonality= seasonality_option[0], \
-                    weekly_seasonality=seasonality_option[1], \
+    model = Prophet(weekly_seasonality= False, \
                     yearly_seasonality=seasonality_option[3], \
                     holidays= holidaybeta)
     if seasonality_option[2]:
         model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
+    if seasonality_option[1]:
+        model.add_seasonality(name='weekly', period=7, fourier_order=21, prior_scale= 100)
 
     for feature in txs.columns.values.tolist():
         if not (feature == 'ds' or feature == 'y'):
@@ -66,15 +66,9 @@ def Bayseian2(txs, forecastDay, unit, temp_data_dir):
     future= pd.merge(future, txs_raw, how='left', on='ds')
     print(future[future.isnull().any(axis=1)])
     future.dropna(axis=0, inplace=True)
-    print(future)
-    # if(forcastedRain.any()) :
-    #     future['rain_amount'] = forcastedRain
-    #     future['max_temp'] = forcastedMax
-    #     future['min_temp'] = forcastedMin
-    # else :
-    #     print('none')
-    #여기도?
-    return (future, model.predict(future))
+    # print(future)
+    forecastProphetTable= model.predict(future)
+    return (model, future, forecastProphetTable)
     # date = [d.strftime('%Y-%m-%d') for d in forecastProphetTable['ds']]
 
 def extract_info_from(future, forecastProphetTable, forecastDay):
@@ -82,7 +76,7 @@ def extract_info_from(future, forecastProphetTable, forecastDay):
     expit(result_forecast)
     result_df= pd.concat([future[-forecastDay:], result_forecast], axis=1)
     event_parameter_df= forecastProphetTable[\
-                        (forecastProphetTable['newyear'] + forecastProphetTable['thanksgiving'] + forecastProphetTable['chocostick']).abs() > 0][\
+                            (forecastProphetTable['newyear'] + forecastProphetTable['thanksgiving'] + forecastProphetTable['chocostick']).abs() > 0][\
                         ['ds', 'newyear', 'thanksgiving', 'chocostick']]
     return (result_forecast, result_df, event_parameter_df)
 
@@ -94,12 +88,13 @@ if __name__ == '__main__':
     if ftc.is_dict(txs):
         txs= ftc.dict_to_df(txs, varr.COLNAME_KPPDAILY)
 
-    (future, forecastProphetTable)= Bayseian2(txs, varr.FORECASTDAY, 'day', path_name+temp_data_dir)
+    (model, future, forecastProphetTable)= Bayseian2(txs, varr.FORECASTDAY, 'day')
     (result_forecast, result_df, event_parameter_df)= extract_info_from(future, forecastProphetTable, 31)
 
     print(result_df)
     print(forecastProphetTable.head(20))
     print(event_parameter_df)
+
     # save_as_xlsx(result_df, 'KPP일별투입(10_17).xlsx', specialfilename= 'result_Prophet.xlsx',\
     #             dirpath= 'C:\\Studying\\myvenv\\Project_Nextop\\nextop-engine\\nextop_engine\\_element\\data\\private\\')
     # save_as_xlsx(usecaseofholiday, 'KPP일별투입(10_17).xlsx', specialfilename= 'result_Prophet_usecase.xlsx',\
