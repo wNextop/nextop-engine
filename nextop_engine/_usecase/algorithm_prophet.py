@@ -95,6 +95,10 @@ if __name__ == '__main__':
     print(forecastProphetTable.head(20))
     print(event_parameter_df)
 
+    model.plot(forecastProphetTable)
+    model.plot_components(forecastProphetTable)
+    calc.rms_error(result_df['y'], result_df['yhat'])
+    calc.map_error(result_df['y'], result_df['yhat'])
     # save_as_xlsx(result_df, 'KPP일별투입(10_17).xlsx', specialfilename= 'result_Prophet.xlsx',\
     #             dirpath= 'C:\\Studying\\myvenv\\Project_Nextop\\nextop-engine\\nextop_engine\\_element\\data\\private\\')
     # save_as_xlsx(usecaseofholiday, 'KPP일별투입(10_17).xlsx', specialfilename= 'result_Prophet_usecase.xlsx',\

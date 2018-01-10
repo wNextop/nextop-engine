@@ -36,7 +36,7 @@ DF_DIR= '\\_element\\data\\private\\'
 COLNAME_KPPDAILY= ['ds', 'rain_amount', 'temp_max', 'temp_min', 'y']
 START_DATE= datetime(2010, 7, 1)
 START_DATE_STR= START_DATE.strftime("%Y-%m-%d")
-FORECASTDAY= 183
+FORECASTDAY= 333
 LAST_DATE= datetime(2017, 11, 30)
 END_DATE= (LAST_DATE - timedelta(days=FORECASTDAY))
 END_DATE_STR= END_DATE.strftime("%Y-%m-%d")
