@@ -150,7 +150,7 @@ forecastDay = 365
 
 # # TODO bayseian에 대해서는 input값이 0인 상황처리 필요
 ds = rawArrayDatas['ds'][:-numberOf2017]
-y = list(np.log(rawArrayDatas['y'][:-numberOf2017]))# 왜 로그를 씌워야하는지는 아직도 의문이다. 필요성이 있는가?
+y = list(np.log(rawArrayDatas['y'][:-numberOf2017]))          # 왜 로그를 씌워야하는지는 아직도 의문이다. 필요성이 있는가?
 rainAmount = dataRainAmount[:-numberOf2017]
 tempMax = dataTempMax[:-numberOf2017]
 tempMin = dataTempMin[:-numberOf2017]

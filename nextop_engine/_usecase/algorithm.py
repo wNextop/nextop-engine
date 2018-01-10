@@ -1,10 +1,13 @@
 import os
 import sys
+
+from nextop_engine._element.feature_control import dict_to_df
+
 path_name= os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(path_name)
 
 from _element.feature_control import *
-from _element.calculations import minMaxNormalizer, minMaxDeNormalizer
+# from _element.calculations import minMaxNormalizer, minMaxDeNormalizer
 
 import tensorflow as tf
 import numpy as np
@@ -51,7 +54,7 @@ def LSTM(txs, forecastDay, features):
 
     # Backup originalXY for denormalize
     originalXY = np.array(tempxy).transpose().astype(np.float)
-    xy = minMaxNormalizer(xy)
+    # xy = minMaxNormalizer(xy)
 
     # TRAIN PARAMETERS
     # data_dim은 y값 도출을 위한 feature 가지수+1(독립변수 가지수 +1(y포함))
@@ -114,9 +117,9 @@ def LSTM(txs, forecastDay, features):
             print("[step: {}] loss: {}".format(i, step_loss))
 
         # Test step
-        test_predict = minMaxDeNormalizer(sess.run(Y_pred, feed_dict={X: testX}), originalXY)
-        realSale = minMaxDeNormalizer(testY[-1], originalXY)
-    return np.square(test_predict[-1]).tolist()
+        # test_predict = minMaxDeNormalizer(sess.run(Y_pred, feed_dict={X: testX}), originalXY)
+        # realSale = minMaxDeNormalizer(testY[-1], originalXY)
+    # return np.square(test_predict[-1]).tolist()
 
 # TODO : 엘에스티엠 개선
 
