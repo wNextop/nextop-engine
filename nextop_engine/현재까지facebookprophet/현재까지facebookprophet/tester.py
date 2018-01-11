@@ -13,7 +13,7 @@ def rmse(a, b):
     return np.sqrt(sum / len(a))
 
 
-def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain, forcastedMax, forcastedMin, unit):
+def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain, forcastedMax, forcastedMin, allsunday, unit):
     global mockForecastDictionary
     global realForecastDictionary
 
@@ -26,6 +26,15 @@ def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain
         'upper_window': 1,
     })
 
+    newyearbefore = pd.DataFrame({
+        'holiday': 'newyearbefore',
+        'ds': pd.to_datetime(['2011-01-26', '2012-01-15',
+                              '2013-02-02', '2014-01-23', '2015-02-11',
+                              '2016-02-01', '2017-02-20', '2018-02-08']),
+        'lower_window': -4,
+        'upper_window': 4,
+    })
+
     thanksgiving = pd.DataFrame({
         'holiday': 'thanksgiving',
         'ds': pd.to_datetime(['2010-09-22', '2011-09-12', '2012-09-30',
@@ -35,11 +44,27 @@ def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain
         'upper_window': 1,
     })
 
+    thanksgivingbefore = pd.DataFrame({
+        'holiday': 'thanksgivingbefore',
+        'ds': pd.to_datetime(['2010-09-14', '2011-09-04', '2012-09-22',
+                              '2013-09-11', '2014-09-01', '2015-09-19',
+                              '2016-09-07', '2017-09-26', '2018-09-16']),
+        'lower_window': -1,
+        'upper_window': 1,
+    })
+
     chocostick = pd.DataFrame({
         'holiday': 'chocostick',
         'ds': pd.to_datetime(['2010-11-11', '2011-11-11', '2012-11-11',
                               '2013-11-11', '2014-11-11', '2015-11-11',
                               '2016-11-11', '2017-11-11', '2018-11-11']),
+        'lower_window': 0,
+        'upper_window': 0,
+    })
+
+    sunday = pd.DataFrame({
+        'holiday': 'sunday',
+        'ds': pd.to_datetime(allsunday),
         'lower_window': 0,
         'upper_window': 0,
     })
@@ -54,13 +79,10 @@ def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain
             forecastProphetTable = model.predict(future)
 
         else:
-            holidaybeta = pd.concat((newyear, thanksgiving, chocostick))
-            # print(holidaybeta)
+            holidaybeta = pd.concat((newyear, thanksgiving, chocostick, sunday))
 
-            model = Prophet(weekly_seasonality=True, yearly_seasonality=True, holidays= holidaybeta)
-            # model.add_seasonality(model, name='monthly', period=30.5, fourier_order=5)
-
-
+            model = Prophet(daily_seasonality=False, weekly_seasonality=False, yearly_seasonality=True, holidays=holidaybeta, holidays_prior_scale=40)
+            model.add_seasonality(name='week', period=7, fourier_order=7, prior_scale=20)
             if(amountOfRain.any()) :
                 print('here')
                 txs['rain_amount'] = amountOfRain
@@ -85,10 +107,10 @@ def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain
                 print('none')
 
             forecastProphetTable = model.predict(future)
-            # print(forecastProphetTable)
+            print(forecastProphetTable)
 
-            # usecaseofholiday = forecastProphetTable[(forecastProphetTable['newyear'] + forecastProphetTable['thanksgiving'] + forecastProphetTable['chocostick']).abs() > 0][['ds', 'newyear', 'thanksgiving', 'chocostick']][:]
-            # print(usecaseofholiday)
+            usecaseofholiday = forecastProphetTable[(forecastProphetTable['newyear'] + forecastProphetTable['thanksgiving'] + forecastProphetTable['chocostick'] + forecastProphetTable['sunday']).abs() > 0][['ds', 'newyear', 'thanksgiving', 'chocostick', 'sunday']][:]
+            print(usecaseofholiday)
 
     elif unit is 'week':
         # print("here2")
@@ -129,8 +151,6 @@ def Bayseian(txs, forecastDay, amountOfRain, maxOfTemp, minOfTemp, forcastedRain
 
     # date = [d.strftime('%Y-%m-%d') for d in forecastProphetTable['ds']]
     return [np.exp(y) for y in forecastProphetTable['yhat'][-forecastDay:]]
-
-
 # ------------------------------------------------------------원본 데이터들
 dataByDates = pd.read_csv('KPPinput10_17.csv', header = 0)
 dataDates = pd.to_datetime(dataByDates['ds'])
@@ -138,6 +158,20 @@ dataValues = dataByDates['y']
 dataRainAmount = dataByDates['rain_amount']
 dataTempMax = dataByDates['temp_max']
 dataTempMin = dataByDates['temp_min']
+
+# ------------------------------------------------------------sunday 만들기
+def day_sunday(ds):
+    date = pd.to_datetime(ds)
+    if date.weekday() == 6:
+        return 1
+    else:
+        return 0
+dataByDates['sunday'] = dataByDates['ds'].apply(day_sunday)
+dataHolidaySunday = []
+for i in range(0, len(dataByDates['ds'])) :
+    if dataByDates['sunday'][i] == 1:
+        dataHolidaySunday.append(pd.to_datetime(dataByDates['ds'][i]))
+# -----------------------------------------------------------sunday 만들기 끝
 # print(dataDates)
 # print(dataDates)
 
@@ -145,7 +179,7 @@ rawArrayDatas = pd.concat((dataDates, dataValues), axis=1)
 # print(rawArrayDatas)
 # ------------------------------------------------------------2016년까지의 데이터들. 2017예측을 위해서 사용한다.
 
-numberOf2017 = 333
+numberOf2017 = 334
 forecastDay = 365
 
 # # TODO bayseian에 대해서는 input값이 0인 상황처리 필요
@@ -161,7 +195,7 @@ salesFor2017 = list(zip(ds, y))
 txsFor2017 = pd.DataFrame(data=salesFor2017, columns=['ds', 'y'])
 # print(txsFor2017)
 testFor2017 = {}
-testFor2017['Bayseian'] = Bayseian(txsFor2017, numberOf2017, rainAmount, tempMax, tempMin, dataRainAmount, dataTempMax, dataTempMin, 'day')
+testFor2017['Bayseian'] = Bayseian(txsFor2017, numberOf2017, rainAmount, tempMax, tempMin, dataRainAmount, dataTempMax, dataTempMin, dataHolidaySunday,'day')
 YFor2017 = {}
 YFor2017['Bayseian'] = list(rawArrayDatas['y'][-numberOf2017:])
 print(testFor2017['Bayseian'])
