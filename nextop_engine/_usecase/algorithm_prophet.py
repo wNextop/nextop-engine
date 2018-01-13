@@ -2,11 +2,11 @@ import os
 import sys
 path_name= os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(path_name)
-
+print(os.path.dirname(__file__))
 import _element.feature_control as ftc
 import _element.calculations as calc
 import _element.varr as varr
-inputfilename= varr.INPUT_FILENAME
+inputfilename= 'KPPinput10_17.csv'
 #이미 수정한 데이터로 진행
 df_dir= varr.DF_DIR
 temp_data_dir= varr.TEMP_DATA_DIR
@@ -34,7 +34,7 @@ def Bayseian2(txs, forecastDay, unit):
 
     if unit is 'day':
         # print("here2")
-        if (len(txs) < 366):    seasonality_option= (False, True, True, True, 'd')
+        if (len(txs) < 366):    seasonality_option= (False, True, False, True, 'd')
         else:                   seasonality_option= (False, True, True, True, 'd')
 
     elif unit is 'week':
@@ -47,7 +47,7 @@ def Bayseian2(txs, forecastDay, unit):
         if (len(txs) < 12):     seasonality_option= (False, False, False, True, 'm')
         else:                   seasonality_option= (False, False, False, True, 'm')
 
-    model = Prophet(weekly_seasonality= False, \
+    model = Prophet(weekly_seasonality= True,
                     yearly_seasonality=seasonality_option[3], \
                     holidays= holidaybeta)
     if seasonality_option[2]:
@@ -89,7 +89,7 @@ def extract_info_from(future, forecastProphetTable, forecastDay):
 
 # Main ########################################################################
 if __name__ == '__main__':
-    txs= pd.read_excel(path_name+df_dir+inputfilename, sheet_name=None)
+    txs= pd.read_excel('KPP일별투입(10_17)_restructured_restructured.xlsx', header=0)
     if ftc.is_dict(txs):
         txs= ftc.dict_to_df(txs, varr.COLNAME_KPPDAILY)
 
@@ -100,10 +100,12 @@ if __name__ == '__main__':
     print(forecastProphetTable.head(20))
     print(event_parameter_df)
 
-    model.plot(forecastProphetTable)
-    model.plot_components(forecastProphetTable)
-    calc.rms_error(result_df['y'], result_df['yhat'])
-    calc.map_error(result_df['y'], result_df['yhat'])
+    # model.plot(forecastProphetTable)
+    # model.plot_components(forecastProphetTable)
+    print(calc.rms_error(result_df['y'], result_df['yhat']))
+    print(calc.map_error(result_df['y'], result_df['yhat']))
+
+
     # save_as_xlsx(result_df, 'KPP일별투입(10_17).xlsx', specialfilename= 'result_Prophet.xlsx',\
     #             dirpath= 'C:\\Studying\\myvenv\\Project_Nextop\\nextop-engine\\nextop_engine\\_element\\data\\private\\')
     # save_as_xlsx(usecaseofholiday, 'KPP일별투입(10_17).xlsx', specialfilename= 'result_Prophet_usecase.xlsx',\
