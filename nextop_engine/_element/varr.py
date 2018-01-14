@@ -56,9 +56,10 @@ newyearbefore = pd.DataFrame({
 })
 
 HOLYDAYBETA = pd.concat((newyear, thanksgiving, chocostick, christmas, newyearbefore, thanksgivingbefore))
-TEMP_DATA_DIR= '\\_element\\data\\temp_data'
+PJ_DIR= 'C:\\Studying\\Project_Nextop\\nextop-engine\\nextop_engine'
+TEMP_DATA_DIR= '\\_element\\data\\temp_data\\'
 ALG_PRPPHET_DIR= '\\_usecase\\algorithm_prophet.py'
-INPUT_FILENAME= 'KPP일별투입(10_17)_restructured_restructured.xlsx'
+# INPUT_FILENAME=
 DF_DIR= '\\_element\\data\\private\\'
 COLNAME_KPPDAILY= ['ds', 'rain_amount', 'temp_max', 'temp_min', 'y']
 START_DATE= datetime(2010, 7, 1)
