@@ -70,7 +70,8 @@ def extract_info_from(future, forecastProphetTable, forecastDay):
     expit(result_forecast['yhat'])
     print(result_forecast)
     # result_df= pd.concat([future[-forecastDay:], result_forecast], axis=1)
-    result_df= future[-forecastDay:].join(result_forecast, how='left', on= 'ds', lsuffix= '_left', rsuffix= '_right')
+    result_df= pd.merge(future[-forecastDay:], result_forecast, how='inner', on='ds')
+    # future[-forecastDay:].join(result_forecast, how='left', on= 'ds', lsuffix= '_left', rsuffix= '_right')
     event_parameter_df= forecastProphetTable[\
                             (forecastProphetTable['newyear'] + forecastProphetTable['thanksgiving']\
                              + forecastProphetTable['chocostick'] + forecastProphetTable['christmas'] + forecastProphetTable['newyearbefore']) + forecastProphetTable['thanksgivingbefore'].abs() > 0][\
