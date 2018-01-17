@@ -1,8 +1,8 @@
 # Data and Databases
 *.sql
 *.sqlite
-**/private/**/*.xlsx
-**/private/**/*.csv
+# **/private/**/*.xlsx
+# **/private/**/*.csv
 
 # C extensions
 *.so
